@@ -1,0 +1,80 @@
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+  
+  .btn-pill {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-pill:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { opacity: 0.9; }
+  
+  .btn-secondary { background: white; color: var(--text-main); border: 1px solid #cbd5e1; }
+  .btn-secondary:hover { background: #f8fafc; }
+  
+  .btn-danger { color: var(--danger); background: none; padding: 4px; }
+  .btn-danger:hover { background: #fef2f2; border-radius: 4px; }
+  
+  input, select {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fff;
+    width: 100%; 
+    box-sizing: border-box; 
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  
+  .table-wrapper { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; color: var(--text-muted); padding: 12px 0; border-bottom: 1px solid var(--border-color); font-weight: 500; }
+  td { padding: 14px 0; border-bottom: 1px solid #f1f5f9; color: var(--text-main); }
+  tr:last-child td { border-bottom: none; }
+  
+  .modal-overlay { 
+    background: rgba(15, 23, 42, 0.4); 
+    backdrop-filter: blur(4px); 
+    position: fixed; top:0; left:0; right:0; bottom:0; 
+    z-index: 50; 
+    display:flex; justify-content:center; align-items:center; 
+  }
+  
+  .modal-overlay.z-top { z-index: 100; }
+  
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 100%; 
+    max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    animation: floatIn 0.2s ease-out;
+    position: relative;
+  }
+  
+  .modal-content.mini { max-width: 400px; }
+  
+  @keyframes floatIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); }}
+  
+  .toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; z-index: 200; font-weight: 500; }
+  
