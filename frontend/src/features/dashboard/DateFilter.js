@@ -1,18 +1,36 @@
 import React from 'react';
+import './DateFilter.css';
 
-export const DateFilter = ({ startDate, endDate, onDateChange, onClear }) => {
+export const DateFilter = ({ activeFilter, onFilterChange }) => {
   return (
-    <div className="card flex-gap" style={{ padding: '10px 15px', width: 'fit-content', marginBottom: '20px' }}>
-      <span className="stat-label">Filter:</span>
-      <input type="date" value={startDate} onChange={(e) => onDateChange('start', e.target.value)} />
-      <span style={{ color: "#999" }}>to</span>
-      <input type="date" value={endDate} onChange={(e) => onDateChange('end', e.target.value)} />
-      
-      {(startDate || endDate) && (
-        <button onClick={onClear} className="btn btn-danger" style={{ fontSize: '0.9rem', marginLeft: '10px' }}>
-          Clear
-        </button>
-      )}
+    <div className="filter-container">
+      <button 
+        className={`filter-pill ${activeFilter === 'all' ? 'active' : ''}`}
+        onClick={() => onFilterChange('all')}
+      >
+        All Time
+      </button>
+
+      <button 
+        className={`filter-pill ${activeFilter === 'paycheck' ? 'active' : ''}`}
+        onClick={() => onFilterChange('paycheck')}
+      >
+        Last Paycheck
+      </button>
+
+      <button 
+        className={`filter-pill ${activeFilter === '30days' ? 'active' : ''}`}
+        onClick={() => onFilterChange('30days')}
+      >
+        Last 30 Days
+      </button>
+
+      <button 
+        className={`filter-pill ${activeFilter === 'custom' ? 'active' : ''}`}
+        onClick={() => onFilterChange('custom')}
+      >
+        Custom...
+      </button>
     </div>
   );
 };
