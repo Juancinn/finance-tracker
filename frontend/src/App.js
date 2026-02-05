@@ -4,8 +4,8 @@ import { AccountAccordion } from './features/dashboard/AccountAccordion';
 import { SpendingChart } from './features/dashboard/SpendingChart';
 import { CategoryManager } from './features/categories/CategoryManager';
 import { DateFilter } from './features/dashboard/DateFilter';
-import '../src/styles/elements.css'
-import '../src/features/dashboard/Dashboard.css'
+import './styles/elements.css';
+import './features/dashboard/Dashboard.css';
 
 const IconSettings = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.29 1.29 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -16,13 +16,16 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [showManager, setShowManager] = useState(false);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
-  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'paycheck', '30days', 'custom'
+  const [activeFilter, setActiveFilter] = useState("all"); 
   const [showDateModal, setShowDateModal] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const loadData = useCallback(async (start = "", end = "") => {
-    const s = start || dateRange.start;
-    const e = end || dateRange.end;
+  // --- DATA LOADING ---
+  // Fix: Accept optional arguments to allow immediate fetching
+  const loadData = useCallback(async (manualStart = null, manualEnd = null) => {
+    const s = manualStart !== null ? manualStart : dateRange.start;
+    const e = manualEnd !== null ? manualEnd : dateRange.end;
+    
     const txnData = await fetchTransactions(s, e);
     setTransactions(txnData);
     
@@ -30,10 +33,11 @@ function App() {
       const catRes = await fetch('http://127.0.0.1:5000/categories');
       setCategories(await catRes.json());
     } catch (e) { console.error(e); }
-  }, [dateRange.start, dateRange.end]);
+  }, [dateRange]); 
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // --- STATS CALCULATION ---
   const stats = useMemo(() => {
     let net = 0, income = 0, expense = 0;
     const typeMap = {};
@@ -49,51 +53,65 @@ function App() {
     return { net, income, expense };
   }, [transactions, categories]);
 
-  // --- SMART FILTER LOGIC ---
+  // --- FILTER LOGIC (FIXED) ---
   const handleFilterClick = async (filterType) => {
     setActiveFilter(filterType);
+    let newStart = "";
+    let newEnd = "";
+
+    // Helper: Use en-CA to get YYYY-MM-DD in LOCAL time (fixes timezone bugs)
+    const getDaysAgo = (days) => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d.toLocaleDateString('en-CA');
+    };
 
     if (filterType === 'all') {
-      setDateRange({ start: "", end: "" });
-      loadData("", "");
+      newStart = "";
+      newEnd = "";
+      showNotification("Showing all history");
     } 
     else if (filterType === '30days') {
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      const start = d.toISOString().split('T')[0];
-      setDateRange({ start, end: "" });
-      loadData(start, "");
+      newStart = getDaysAgo(30);
+      newEnd = ""; // Empty = "Today"
     } 
     else if (filterType === 'paycheck') {
-      // 1. Fetch ALL data to find the last paycheck
-      // (Optimization: In a real app, backend should handle this)
-      const allTxns = await fetchTransactions();
-      const incomeCats = categories.filter(c => c.type === 'Income').map(c => c.name);
+      // 1. Fetch ALL data to find the reference point
+      const allTxns = await fetchTransactions(); 
       
-      const lastIncome = allTxns.find(t => incomeCats.includes(t.category));
+      // 2. Strict Search: "Paycheck" category first
+      let lastPaycheck = allTxns.find(t => t.category === "Paycheck");
       
-      if (lastIncome) {
-        setDateRange({ start: lastIncome.date, end: "" });
-        loadData(lastIncome.date, "");
-        showNotification(`Filtered from last paycheck: ${lastIncome.date}`);
+      // 3. Fallback: Any "Income" category
+      if (!lastPaycheck) {
+         const incomeCats = categories.filter(c => c.type === 'Income').map(c => c.name);
+         lastPaycheck = allTxns.find(t => incomeCats.includes(t.category));
+      }
+
+      if (lastPaycheck) {
+        newStart = lastPaycheck.date;
+        newEnd = "";
+        showNotification(`Since ${lastPaycheck.category}: ${newStart}`);
       } else {
-        showNotification("No recent paycheck found. Showing last 14 days.");
-        const d = new Date();
-        d.setDate(d.getDate() - 14);
-        const start = d.toISOString().split('T')[0];
-        setDateRange({ start, end: "" });
-        loadData(start, "");
+        showNotification("No previous Paycheck found");
+        return; // Exit if failed
       }
     } 
     else if (filterType === 'custom') {
       setShowDateModal(true);
+      return; // Wait for modal
     }
+
+    // 4. Update state AND fetch immediately
+    setDateRange({ start: newStart, end: newEnd });
+    loadData(newStart, newEnd);
   };
 
   const applyCustomDate = (start, end) => {
     setDateRange({ start, end });
     loadData(start, end);
     setShowDateModal(false);
+    setActiveFilter('custom');
   };
 
   const handleUpdateTransaction = async (id, newCategory, newSubcategory) => {
