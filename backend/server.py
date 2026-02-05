@@ -20,11 +20,21 @@ def get_transactions():
     end_date = request.args.get('end')
     
     conn = get_db_connection()
+    
+    # CASE 1: Specific Range (From X to Y)
     if start_date and end_date:
         query = 'SELECT * FROM transactions WHERE date BETWEEN ? AND ? ORDER BY date DESC'
         rows = conn.execute(query, (start_date, end_date)).fetchall()
+        
+    # CASE 2: Open-Ended (From X to Present)
+    elif start_date:
+        query = 'SELECT * FROM transactions WHERE date >= ? ORDER BY date DESC'
+        rows = conn.execute(query, (start_date,)).fetchall()
+        
+    # CASE 3: All Time
     else:
         rows = conn.execute('SELECT * FROM transactions ORDER BY date DESC').fetchall()
+        
     conn.close()
     return jsonify([dict(row) for row in rows])
 

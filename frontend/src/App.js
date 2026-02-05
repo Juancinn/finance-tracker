@@ -59,10 +59,12 @@ function App() {
     let newStart = "";
     let newEnd = "";
 
-    const getDaysAgo = (days) => {
-      const d = new Date();
-      d.setDate(d.getDate() - days);
-      return d.toLocaleDateString('en-CA');
+    // Helper: Returns YYYY-MM-DD in LOCAL time (prevents off-by-one errors)
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     };
 
     if (filterType === 'all') {
@@ -70,14 +72,28 @@ function App() {
       newEnd = "";
       showNotification("Showing all history");
     } 
+    else if (filterType === 'month') {
+      const now = new Date();
+      // Set to the 1st day of the current month
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      newStart = formatDate(firstDay);
+      newEnd = ""; // Empty implies "Present"
+    }
     else if (filterType === '30days') {
-      newStart = getDaysAgo(30);
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      newStart = formatDate(d);
       newEnd = ""; 
     } 
     else if (filterType === 'paycheck') {
+      // 1. Fetch ALL data to find the reference point
+      // (We fetch everything because the last paycheck might be outside the current view)
       const allTxns = await fetchTransactions(); 
+      
+      // 2. Strict Search: Look for explicit "Paycheck" category first
       let lastPaycheck = allTxns.find(t => t.category === "Paycheck");
       
+      // 3. Fallback: Look for any "Income" type category if specific "Paycheck" tag isn't used
       if (!lastPaycheck) {
          const incomeCats = categories.filter(c => c.type === 'Income').map(c => c.name);
          lastPaycheck = allTxns.find(t => incomeCats.includes(t.category));
@@ -89,12 +105,12 @@ function App() {
         showNotification(`Since ${lastPaycheck.category}: ${newStart}`);
       } else {
         showNotification("No previous Paycheck found");
-        return; 
+        return; // Exit without changing the view
       }
     } 
     else if (filterType === 'custom') {
       setShowDateModal(true);
-      return; 
+      return; // Stop here, wait for modal input
     }
 
     setDateRange({ start: newStart, end: newEnd });
@@ -195,7 +211,11 @@ function App() {
         </div>
       </div>
 
-      <DateFilter activeFilter={activeFilter} onFilterChange={handleFilterClick} />
+      <DateFilter 
+        activeFilter={activeFilter} 
+        onFilterChange={handleFilterClick} 
+        dateRange={dateRange}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '100%', marginBottom: '40px' }}>
         <SpendingChart transactions={transactions} categories={categories} />

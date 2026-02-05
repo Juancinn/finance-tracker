@@ -3,8 +3,14 @@ const API_URL = 'http://127.0.0.1:5000';
 export const fetchTransactions = async (startDate, endDate) => {
   try {
     let url = `${API_URL}/transactions`;
-    if (startDate && endDate) {
-      url += `?start=${startDate}&end=${endDate}`;
+    
+    const params = new URLSearchParams();
+    if (startDate) params.append('start', startDate);
+    if (endDate) params.append('end', endDate);
+    
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
     }
 
     const response = await fetch(url);
