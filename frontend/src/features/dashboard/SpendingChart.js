@@ -15,18 +15,22 @@ const COLORS = [
   '#84cc16'  // Lime
 ];
 
-// Custom Legend: Only shows Top 5 + "More"
-const CustomLegend = ({ payload }) => {
-  const top5 = payload.slice(0, 5);
-  const remaining = payload.length - 5;
+// Custom Legend: Accepts 'data' directly to ensure accuracy
+const CustomLegend = ({ data }) => {
+  if (!data) return null;
+
+  const top5 = data.slice(0, 5);
+  const remaining = data.length > 5 ? data.slice(5).reduce((acc, curr) => acc + curr.value, 0) : 0;
+  const remainingCount = data.length - 5;
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginTop: '20px' }}>
       {top5.map((entry, index) => (
         <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: entry.color }} />
+          {/* Match the color logic from the Pie */}
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: COLORS[index % COLORS.length] }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            {entry.value}
+            {entry.name}
           </span>
         </div>
       ))}
@@ -35,7 +39,7 @@ const CustomLegend = ({ payload }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#cbd5e1' }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            +{remaining} others
+            +{remainingCount} others
           </span>
         </div>
       )}
@@ -75,7 +79,7 @@ export const SpendingChart = ({ transactions, categories }) => {
         <h3>Spending Breakdown</h3>
         {totalTracked > 0 && (
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px' }}>
-            ${totalTracked.toLocaleString()}
+            ${totalTracked.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
         )}
       </div>
@@ -87,10 +91,11 @@ export const SpendingChart = ({ transactions, categories }) => {
               data={sortedData}
               cx="50%"
               cy="50%"
-              innerRadius={70} // Thinner, cleaner ring
+              innerRadius={70}
               outerRadius={110}
               paddingAngle={2}
               dataKey="value"
+              nameKey="name" // Explicitly tell Recharts to use 'name' as the key
               stroke="none"
             >
               {sortedData.map((entry, index) => (
@@ -110,12 +115,12 @@ export const SpendingChart = ({ transactions, categories }) => {
               }}
               itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
             />
-            <Legend content={<CustomLegend />} verticalAlign="bottom" />
+            {/* PASS DATA EXPLICITLY TO LEGEND */}
+            <Legend content={<CustomLegend data={sortedData} />} verticalAlign="bottom" />
           </PieChart>
         </ResponsiveContainer>
       ) : (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-          {/* Sleek Empty State Icon */}
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px', opacity: 0.5 }}>
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
             <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>

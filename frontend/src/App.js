@@ -1,10 +1,10 @@
-/* frontend/src/App.js */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchTransactions } from './api/transactions';
 import { AccountAccordion } from './features/dashboard/AccountAccordion';
 import { SpendingChart } from './features/dashboard/SpendingChart';
 import { CategoryManager } from './features/categories/CategoryManager';
 import { DateFilter } from './features/dashboard/DateFilter';
+import { CategoryDetails } from './features/dashboard/CategoryDetails';
 import './styles/elements.css';
 import './features/dashboard/Dashboard.css';
 
@@ -199,7 +199,17 @@ function App() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '100%', marginBottom: '40px' }}>
         <SpendingChart transactions={transactions} categories={categories} />
+
+        <CategoryDetails
+            transactions={transactions} 
+            categories={categories}
+            onUpdate={handleUpdateTransaction}
+            onCreate={handleCreateCategory}
+            onSplit={handleSplitTransaction}
+          />
+
       </div>
+
 
       <h3 style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>Accounts</h3>
 
