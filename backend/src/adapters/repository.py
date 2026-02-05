@@ -40,16 +40,13 @@ class SqliteRepository:
                 )
             """)
             
-            # Seed generic defaults if empty
-            cursor = conn.cursor()
-            cursor.execute("SELECT count(*) FROM categories")
-            if cursor.fetchone()[0] == 0:
-                self._seed_defaults(conn)
+            self._seed_defaults(conn)
 
     def _seed_defaults(self, conn):
         categories = [
             ('Uncategorized', 'General'),
             ('Income', 'Income'), 
+            ('Paycheck', 'Income'),         
             ('Transfer', 'Passthrough'),
             ('Opening Balance', 'Passthrough'),
             ('Payment', 'Passthrough')
@@ -57,7 +54,7 @@ class SqliteRepository:
         conn.executemany("INSERT OR IGNORE INTO categories (name, type) VALUES (?, ?)", categories)
         
         rules = [
-            ('PAYROLL', 'Income'),
+            ('PAYROLL', 'Paycheck'),        
             ('PAYMENT THANK YOU', 'Transfer')
         ]
         conn.executemany("INSERT OR IGNORE INTO rules (keyword, category) VALUES (?, ?)", rules)
