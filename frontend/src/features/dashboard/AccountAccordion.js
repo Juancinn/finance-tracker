@@ -17,8 +17,10 @@ const IconWallet = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
 );
 
-export const AccountAccordion = ({ title, accountType, allTransactions, categories, onUpdateTransaction }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const AccountAccordion = ({ 
+  title, accountType, allTransactions, categories, 
+  onUpdateTransaction, onCreateCategory, onSplit
+}) => {  const [isOpen, setIsOpen] = useState(false);
   const { transactions, totalIn, totalOut, netChange } = useAccountStats(allTransactions, accountType, categories);
   
   const isCredit = accountType === 'Visa';
@@ -64,6 +66,8 @@ export const AccountAccordion = ({ title, accountType, allTransactions, categori
             transactions={transactions} 
             categories={categories} 
             onUpdate={onUpdateTransaction}
+            onCreateCategory={onCreateCategory}
+            onSplit={onSplit} 
             isEditable={isEditable} 
           />
         </div>

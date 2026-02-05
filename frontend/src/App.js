@@ -1,3 +1,4 @@
+/* frontend/src/App.js */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchTransactions } from './api/transactions';
 import { AccountAccordion } from './features/dashboard/AccountAccordion';
@@ -21,7 +22,6 @@ function App() {
   const [toast, setToast] = useState(null);
 
   // --- DATA LOADING ---
-  // Fix: Accept optional arguments to allow immediate fetching
   const loadData = useCallback(async (manualStart = null, manualEnd = null) => {
     const s = manualStart !== null ? manualStart : dateRange.start;
     const e = manualEnd !== null ? manualEnd : dateRange.end;
@@ -37,7 +37,7 @@ function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // --- STATS CALCULATION ---
+  // --- STATS ---
   const stats = useMemo(() => {
     let net = 0, income = 0, expense = 0;
     const typeMap = {};
@@ -53,13 +53,12 @@ function App() {
     return { net, income, expense };
   }, [transactions, categories]);
 
-  // --- FILTER LOGIC (FIXED) ---
+  // --- ACTIONS ---
   const handleFilterClick = async (filterType) => {
     setActiveFilter(filterType);
     let newStart = "";
     let newEnd = "";
 
-    // Helper: Use en-CA to get YYYY-MM-DD in LOCAL time (fixes timezone bugs)
     const getDaysAgo = (days) => {
       const d = new Date();
       d.setDate(d.getDate() - days);
@@ -73,16 +72,12 @@ function App() {
     } 
     else if (filterType === '30days') {
       newStart = getDaysAgo(30);
-      newEnd = ""; // Empty = "Today"
+      newEnd = ""; 
     } 
     else if (filterType === 'paycheck') {
-      // 1. Fetch ALL data to find the reference point
       const allTxns = await fetchTransactions(); 
-      
-      // 2. Strict Search: "Paycheck" category first
       let lastPaycheck = allTxns.find(t => t.category === "Paycheck");
       
-      // 3. Fallback: Any "Income" category
       if (!lastPaycheck) {
          const incomeCats = categories.filter(c => c.type === 'Income').map(c => c.name);
          lastPaycheck = allTxns.find(t => incomeCats.includes(t.category));
@@ -94,15 +89,14 @@ function App() {
         showNotification(`Since ${lastPaycheck.category}: ${newStart}`);
       } else {
         showNotification("No previous Paycheck found");
-        return; // Exit if failed
+        return; 
       }
     } 
     else if (filterType === 'custom') {
       setShowDateModal(true);
-      return; // Wait for modal
+      return; 
     }
 
-    // 4. Update state AND fetch immediately
     setDateRange({ start: newStart, end: newEnd });
     loadData(newStart, newEnd);
   };
@@ -126,6 +120,46 @@ function App() {
     showNotification("Transaction updated");
   };
 
+  // NEW: HANDLE SPLIT TRANSACTION
+  const handleSplitTransaction = async (id, amount) => {
+    try {
+      const res = await fetch(`http://127.0.0.1:5000/transactions/${id}/split`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      
+      if (!res.ok) throw new Error("Split failed");
+      
+      showNotification("Transaction split successfully");
+      loadData(); // Refresh UI to show the new split items
+    } catch (e) {
+      showNotification("Error splitting transaction");
+    }
+  };
+
+  // NEW: CREATE TAG ON THE FLY
+  const handleCreateCategory = async (name) => {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, type: 'Passthrough' })
+      });
+      
+      if (!res.ok) throw new Error("Failed");
+
+      const catRes = await fetch('http://127.0.0.1:5000/categories');
+      setCategories(await catRes.json());
+      
+      showNotification(`Created tag: "${name}"`);
+      return true; 
+    } catch (e) {
+      showNotification("Error: Tag might already exist");
+      return false;
+    }
+  };
+
   const showNotification = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -133,7 +167,6 @@ function App() {
 
   return (
     <div className="container">
-      {/* HEADER */}
       <div className="flex-between app-header">
         <div>
           <h1>Finance Dashboard</h1>
@@ -145,7 +178,6 @@ function App() {
         </button>
       </div>
 
-      {/* BIG NUMBER CARDS */}
       <div className="summary-row">
         <div className="summary-card">
           <div className="summary-label">Net Cash Flow</div>
@@ -172,19 +204,33 @@ function App() {
       <h3 style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>Accounts</h3>
 
       <AccountAccordion 
-        title="Chequing" accountType="Chequing" 
-        allTransactions={transactions} categories={categories} onUpdateTransaction={handleUpdateTransaction}
+        title="Chequing" 
+        accountType="Chequing" 
+        allTransactions={transactions} 
+        categories={categories} 
+        onUpdateTransaction={handleUpdateTransaction}
+        onCreateCategory={handleCreateCategory} 
+        onSplit={handleSplitTransaction} // <--- PASSED HERE
       />
       <AccountAccordion 
-        title="Savings" accountType="Savings" 
-        allTransactions={transactions} categories={categories} onUpdateTransaction={handleUpdateTransaction}
+        title="Savings" 
+        accountType="Savings" 
+        allTransactions={transactions} 
+        categories={categories} 
+        onUpdateTransaction={handleUpdateTransaction}
+        onCreateCategory={handleCreateCategory} 
+        onSplit={handleSplitTransaction} // <--- PASSED HERE
       />
       <AccountAccordion 
-        title="Visa Card" accountType="Visa" 
-        allTransactions={transactions} categories={categories} onUpdateTransaction={handleUpdateTransaction}
+        title="Visa Card" 
+        accountType="Visa" 
+        allTransactions={transactions} 
+        categories={categories} 
+        onUpdateTransaction={handleUpdateTransaction}
+        onCreateCategory={handleCreateCategory} 
+        onSplit={handleSplitTransaction} // <--- PASSED HERE
       />
 
-      {/* MODAL: CATEGORIES */}
       {showManager && (
         <div className="modal-overlay" onClick={() => setShowManager(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -197,7 +243,6 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: CUSTOM DATE */}
       {showDateModal && (
         <div className="modal-overlay" onClick={() => setShowDateModal(false)}>
           <div className="modal-content" style={{ width: '400px' }} onClick={e => e.stopPropagation()}>

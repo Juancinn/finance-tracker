@@ -1,4 +1,5 @@
 import sqlite3
+import uuid
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from collections import defaultdict
@@ -31,11 +32,21 @@ def get_transactions():
 def update_transaction(id):
     data = request.json
     conn = get_db_connection()
-    conn.execute('UPDATE transactions SET category = ? WHERE id = ?',
-                 (data.get('category'), id))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success"})
+    
+    category = data.get('category')
+    
+    if isinstance(category, list):
+        category = ", ".join(category)
+        
+    try:
+        conn.execute('UPDATE transactions SET category = ? WHERE id = ?',
+                     (category, id))
+        conn.commit()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/categories', methods=['GET'])
 def get_categories():
@@ -137,6 +148,51 @@ def get_recurring():
                 })
 
     return jsonify(detected)
+
+@app.route('/transactions/<id>/split', methods=['POST'])
+def split_transaction(id):
+    data = request.json
+    try:
+        split_amount = float(data.get('amount'))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid amount"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT * FROM transactions WHERE id = ?", (id,))
+    orig = cur.fetchone()
+    
+    if not orig:
+        conn.close()
+        return jsonify({"error": "Transaction not found"}), 404
+        
+    orig_amount = orig['amount']
+    
+    if abs(split_amount) >= abs(orig_amount):
+        conn.close()
+        return jsonify({"error": "Split amount cannot exceed original amount"}), 400
+    
+    sign = 1 if orig_amount >= 0 else -1
+    abs_split = abs(split_amount)
+    
+    new_split_val = abs_split * sign
+    remainder_val = orig_amount - new_split_val
+    
+    cur.execute("UPDATE transactions SET amount = ? WHERE id = ?", (remainder_val, id))
+    
+    new_id = str(uuid.uuid4())
+    new_desc = f"{orig['description']} (Split)"
+    
+    cur.execute("""
+        INSERT INTO transactions (id, date, description, amount, currency, account_type, category)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (new_id, orig['date'], new_desc, new_split_val, orig['currency'], orig['account_type'], 'Uncategorized'))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success", "message": "Transaction split successfully"})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
