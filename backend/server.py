@@ -61,9 +61,23 @@ def update_transaction(id):
 @app.route('/categories', methods=['GET'])
 def get_categories():
     conn = get_db_connection()
-    rows = conn.execute('SELECT name, type FROM categories ORDER BY name').fetchall()
+    cats = conn.execute('SELECT * FROM categories ORDER BY name').fetchall()
+    
+    results = []
+    for cat in cats:
+        # Count how many transactions use this tag (handling multi-tags)
+        count_query = "SELECT COUNT(*) FROM transactions WHERE category LIKE ?"
+        # We wrap the name in % to match it anywhere in the string
+        count = conn.execute(count_query, ('%' + cat['name'] + '%',)).fetchone()[0]
+        
+        results.append({
+            "name": cat['name'],
+            "type": cat['type'],
+            "count": count # <--- SENDING THIS TO FRONTEND
+        })
+    
     conn.close()
-    return jsonify([dict(row) for row in rows])
+    return jsonify(results)
 
 @app.route('/categories', methods=['POST'])
 def add_category():

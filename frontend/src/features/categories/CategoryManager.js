@@ -1,15 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ConfirmModal, PromptModal } from '../../components/CustomModals';
 
+// --- SUB-COMPONENT: Reusable Table Section ---
+const CategorySection = ({ title, data, themeColor, onTypeChange, onRename, onDelete }) => {
+  if (!data || data.length === 0) return null;
+
+  return (
+    <div className="category-section">
+      <div className="cat-section-header" style={{ borderLeft: `4px solid ${themeColor}` }}>
+        <h4 style={{ margin: 0, color: '#334155' }}>{title}</h4>
+        <span className="cat-count-badge">{data.length} tags</span>
+      </div>
+      
+      <div className="table-wrapper" style={{ maxHeight: 'none', border: 'none' }}>
+        <table className="clean-table">
+          <tbody>
+            {data.map(c => (
+              <tr key={c.name}>
+                <td style={{ paddingLeft: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.name}</span>
+                    {/* TRANSACTION COUNT BADGE */}
+                    <span className="tx-count-pill" title={`${c.count} transactions use this tag`}>
+                      {c.count} instances
+                    </span>
+                  </div>
+                </td>
+                <td style={{ width: '140px' }}>
+                  <select 
+                    value={c.type} 
+                    onChange={(e) => onTypeChange(c.name, e.target.value)}
+                    className="mini-select"
+                  >
+                    <option value="Expense">Expense</option>
+                    <option value="Income">Income</option>
+                    <option value="Passthrough">Passthrough</option>
+                  </select>
+                </td>
+                <td style={{ textAlign: "right", paddingRight: '16px', whiteSpace: 'nowrap' }}>
+                  <button onClick={() => onRename(c.name)} className="btn-text">Rename</button>
+                  <button onClick={() => onDelete(c.name)} className="btn-text danger">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// --- MAIN COMPONENT ---
 export const CategoryManager = ({ categories, onRefresh, onNotify }) => {
+  // ... (Your Existing State - UNTOUCHED) ...
   const [newCat, setNewCat] = useState("");
   const [catType, setCatType] = useState("Expense");
   const [newRule, setNewRule] = useState("");
   const [ruleCat, setRuleCat] = useState("");
-
   const [confirmState, setConfirmState] = useState(null);
   const [promptState, setPromptState] = useState(null);   
 
+  // ... (Your Existing Handlers - UNTOUCHED) ...
   const handleAddCategory = async () => {
     if (!newCat) return;
     try {
@@ -73,9 +124,19 @@ export const CategoryManager = ({ categories, onRefresh, onNotify }) => {
     onNotify(`Updated type to ${newType}`);
   };
 
+  // --- NEW: Group Categories ---
+  const grouped = useMemo(() => {
+    return {
+      Income: categories.filter(c => c.type === 'Income'),
+      Expense: categories.filter(c => c.type === 'Expense'),
+      Passthrough: categories.filter(c => c.type === 'Passthrough'),
+    };
+  }, [categories]);
+
   return (
-    <div>      
-      {/* ADD CATEGORY */}
+    <div style={{ paddingBottom: '20px' }}>      
+      
+      {/* --- TOP FORMS (UNTOUCHED as requested) --- */}
       <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
         <div className="stat-label" style={{ marginBottom: '12px' }}>New Category</div>
         <div className="flex-gap">
@@ -98,8 +159,7 @@ export const CategoryManager = ({ categories, onRefresh, onNotify }) => {
         </div>
       </div>
 
-      {/* ADD RULE */}
-      <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+      <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '30px' }}>
         <div className="stat-label" style={{ marginBottom: '12px' }}>New Automation Rule</div>
         <div className="flex-gap">
           <div style={{ flex: 2, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -126,59 +186,46 @@ export const CategoryManager = ({ categories, onRefresh, onNotify }) => {
           <button className="btn btn-primary" onClick={handleAddRule}>Save</button>
         </div>
       </div>
+      {/* --- END OF UNTOUCHED FORMS --- */}
 
-      <div className="stat-label" style={{ marginBottom: '10px' }}>Active Categories</div>
-      
-      <div className="table-wrapper" style={{ maxHeight: '400px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <table>
-          <thead>
-            <tr>
-              <th style={{ paddingLeft: '20px' }}>Name</th>
-              <th>Type</th>
-              <th style={{ textAlign: 'right', paddingRight: '20px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map(c => (
-              <tr key={c.name}>
-                <td style={{ fontWeight: 500, paddingLeft: '20px' }}>{c.name}</td>
-                <td>
-                  <select 
-                    value={c.type} 
-                    onChange={(e) => handleTypeChange(c.name, e.target.value)}
-                    style={{ padding: '4px 8px', fontSize: '0.85rem', width: 'auto' }}
-                  >
-                    <option value="Expense">Expense</option>
-                    <option value="Income">Income</option>
-                    <option value="Passthrough">Passthrough</option>
-                  </select>
-                </td>
-                <td style={{ textAlign: "right", paddingRight: '20px' }}>
-                  <button 
-                    onClick={() => setPromptState({ item: c.name, value: c.name })} 
-                    className="btn btn-secondary" 
-                    style={{ marginRight: '8px', padding: '4px 10px', fontSize: '0.8rem' }}
-                  >
-                    Rename
-                  </button>
-                  <button 
-                    onClick={() => setConfirmState({ item: c.name })} 
-                    className="btn btn-secondary" 
-                    style={{ color: 'var(--danger)', borderColor: '#fee2e2', padding: '4px 10px', fontSize: '0.8rem' }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <h3 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>Manage Categories</h3>
 
+      {/* 1. INCOME */}
+      <CategorySection 
+        title="Income Sources" 
+        data={grouped.Income} 
+        themeColor="#10b981" // Green
+        onTypeChange={handleTypeChange}
+        onRename={(name) => setPromptState({ item: name, value: name })}
+        onDelete={(name) => setConfirmState({ item: name })}
+      />
+
+      {/* 2. EXPENSES */}
+      <CategorySection 
+        title="Expenses" 
+        data={grouped.Expense} 
+        themeColor="#ef4444" // Red
+        onTypeChange={handleTypeChange}
+        onRename={(name) => setPromptState({ item: name, value: name })}
+        onDelete={(name) => setConfirmState({ item: name })}
+      />
+
+      {/* 3. PASSTHROUGH */}
+      <CategorySection 
+        title="Passthrough / Transfers" 
+        data={grouped.Passthrough} 
+        themeColor="#94a3b8" // Grey
+        onTypeChange={handleTypeChange}
+        onRename={(name) => setPromptState({ item: name, value: name })}
+        onDelete={(name) => setConfirmState({ item: name })}
+      />
+
+      {/* Modals */}
       {confirmState && (
         <ConfirmModal 
           title="Delete Category?" 
-          message={`Are you sure you want to delete "${confirmState.item}"? This will revert all its transactions to Uncategorized.`}
+          // Show the count in the warning!
+          message={`Are you sure you want to delete "${confirmState.item}"? It is currently used in ${categories.find(c => c.name === confirmState.item)?.count || 0} transactions.`}
           onConfirm={executeDelete} 
           onCancel={() => setConfirmState(null)} 
         />

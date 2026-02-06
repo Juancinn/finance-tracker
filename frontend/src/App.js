@@ -37,19 +37,51 @@ function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // --- STATS ---
+  // --- STATS CALCULATION (STRICT MATH) ---
   const stats = useMemo(() => {
     let net = 0, income = 0, expense = 0;
     const typeMap = {};
     categories.forEach(c => typeMap[c.name] = c.type);
 
     transactions.forEach(t => {
-      const type = typeMap[t.category];
+      // 1. Exclude Savings Account
+      if (t.account_type === 'Savings') return;
+
+      // 2. Resolve Type
+      const primaryTag = t.category ? t.category.split(', ')[0] : 'Uncategorized';
+      const type = typeMap[primaryTag];
+
+      // 3. Exclude Passthrough (e.g. "Payment" category)
       if (type === 'Passthrough') return;
-      if (t.amount > 0) income += t.amount;
-      else expense += Math.abs(t.amount);
-      net += t.amount;
+
+      // 4. Calculate
+      if (type === 'Income') {
+        // Explicit Income (Paycheck, Cashback) always counts
+        income += t.amount;
+        net += t.amount;
+      } 
+      else {
+        // Handle Expense & Uncategorized
+        if (t.amount < 0) {
+          // Money Leaving = Spending
+          expense += Math.abs(t.amount);
+          net += t.amount;
+        } else {
+          // Money Entering (Positive)
+          if (t.account_type === 'Chequing') {
+            // Positive in Chequing = Income (e.g. E-Transfer from friend)
+            income += t.amount;
+            net += t.amount;
+          } else {
+            // Positive in Visa = Refund/Return
+            // This REDUCES your total spending, it is not "Income"
+            expense -= t.amount; 
+            net += t.amount;
+          }
+        }
+      }
     });
+    
     return { net, income, expense };
   }, [transactions, categories]);
 
@@ -87,7 +119,6 @@ function App() {
     } 
     else if (filterType === 'paycheck') {
       // 1. Fetch ALL data to find the reference point
-      // (We fetch everything because the last paycheck might be outside the current view)
       const allTxns = await fetchTransactions(); 
       
       // 2. Strict Search: Look for explicit "Paycheck" category first
@@ -240,7 +271,7 @@ function App() {
         categories={categories} 
         onUpdateTransaction={handleUpdateTransaction}
         onCreateCategory={handleCreateCategory} 
-        onSplit={handleSplitTransaction} // <--- PASSED HERE
+        onSplit={handleSplitTransaction}
       />
       <AccountAccordion 
         title="Savings" 
@@ -249,7 +280,7 @@ function App() {
         categories={categories} 
         onUpdateTransaction={handleUpdateTransaction}
         onCreateCategory={handleCreateCategory} 
-        onSplit={handleSplitTransaction} // <--- PASSED HERE
+        onSplit={handleSplitTransaction}
       />
       <AccountAccordion 
         title="Visa Card" 
@@ -258,7 +289,7 @@ function App() {
         categories={categories} 
         onUpdateTransaction={handleUpdateTransaction}
         onCreateCategory={handleCreateCategory} 
-        onSplit={handleSplitTransaction} // <--- PASSED HERE
+        onSplit={handleSplitTransaction}
       />
 
       {showManager && (
