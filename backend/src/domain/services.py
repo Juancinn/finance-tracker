@@ -1,0 +1,94 @@
+from typing import List, Dict, Any
+from ..data.repository import SqliteRepository
+
+class TransactionService:
+    def __init__(self, repository: SqliteRepository):
+        self.repo = repository
+
+    def import_transactions(self, raw_transactions: List[Dict[str, Any]], user_id: int) -> int:
+        rules = self.repo.get_rules(user_id)
+        added_count = 0
+
+        for tx in raw_transactions:
+            # 1. Deduplicate
+            if self.repo.get_transaction_signature(tx['date'], tx['amount'], tx['description'], user_id):
+                continue 
+
+            # 2. Savings Rule
+            if tx['account_type'] == 'Savings':
+                tx['category'] = 'Transfer'
+            else:
+                # 3. Auto-Categorize
+                assigned_category = 'Uncategorized'
+                for rule in rules:
+                    if rule['keyword'].lower() in tx['description'].lower():
+                        assigned_category = rule['category']
+                        break
+                tx['category'] = assigned_category
+
+            self.repo.create_transaction(tx, user_id)
+            added_count += 1
+        return added_count
+
+    def split_transaction(self, tx_id: int, split_amount: float, user_id: int):
+        """
+        Splits a transaction: Reduces original by amount, creates new transaction for amount.
+        """
+        # 1. Fetch Original
+        tx = self.repo.get_transaction(tx_id, user_id)
+        if not tx:
+            raise ValueError("Transaction not found")
+
+        # 2. Validation
+        original_amount = tx['amount']
+        # Prevent splitting more than the transaction value
+        if abs(split_amount) >= abs(original_amount):
+             raise ValueError("Split amount cannot be greater than or equal to the original transaction amount.")
+
+        # 3. Update Original (Subtract the split part)
+        new_original_amount = original_amount - split_amount
+        self.repo.update_transaction(tx_id, user_id, {"amount": new_original_amount})
+
+        # 4. Create Split Transaction
+        new_tx = {
+            "date": tx['date'],
+            "description": tx['description'] + " (Split)",
+            "amount": split_amount,
+            "category": "Uncategorized",
+            "account_type": tx['account_type']
+        }
+        self.repo.create_transaction(new_tx, user_id)
+
+    def import_from_folder(self, folder_path: str, user_id: int):
+        import os
+        from ..data.importer import CibcImporter
+        
+        importer = CibcImporter(rule_engine=None)
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(f"Directory {folder_path} not found.")
+
+        total_added = 0
+        files_processed = 0
+        print(f"Scanning folder: {folder_path}")
+
+        for filename in os.listdir(folder_path):
+            if not filename.endswith(".csv"): continue
+
+            fname = filename.lower()
+            account_type = None
+            if "chequing" in fname: account_type = "Chequing"
+            elif "credit" in fname or "visa" in fname: account_type = "Visa"
+            elif "savings" in fname: account_type = "Savings"
+
+            if account_type:
+                print(f"Processing {filename} as [{account_type}]...")
+                try:
+                    raw_txns = importer.parse(os.path.join(folder_path, filename), account_type)
+                    added = self.import_transactions(raw_txns, user_id)
+                    print(f"  -> Added {added} new transactions.")
+                    total_added += added
+                    files_processed += 1
+                except Exception as e:
+                    print(f"  -> Error reading file: {e}")
+
+        return total_added, files_processed
