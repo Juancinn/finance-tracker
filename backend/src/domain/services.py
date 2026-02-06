@@ -1,17 +1,19 @@
 from typing import List, Dict, Any
-from ..data.repository import SqliteRepository
+from ..data.repositories.transactions import TransactionRepository
+from ..data.repositories.rules import RuleRepository
 
 class TransactionService:
-    def __init__(self, repository: SqliteRepository):
-        self.repo = repository
+    def __init__(self, tx_repo: TransactionRepository, rule_repo: RuleRepository):
+        self.tx_repo = tx_repo
+        self.rule_repo = rule_repo
 
     def import_transactions(self, raw_transactions: List[Dict[str, Any]], user_id: int) -> int:
-        rules = self.repo.get_rules(user_id)
+        rules = self.rule_repo.get_all(user_id)
         added_count = 0
 
         for tx in raw_transactions:
             # 1. Deduplicate
-            if self.repo.get_transaction_signature(tx['date'], tx['amount'], tx['description'], user_id):
+            if self.tx_repo.exists(tx['date'], tx['amount'], tx['description'], user_id):
                 continue 
 
             # 2. Savings Rule
@@ -26,30 +28,22 @@ class TransactionService:
                         break
                 tx['category'] = assigned_category
 
-            self.repo.create_transaction(tx, user_id)
+            self.tx_repo.create(tx, user_id)
             added_count += 1
         return added_count
 
     def split_transaction(self, tx_id: int, split_amount: float, user_id: int):
-        """
-        Splits a transaction: Reduces original by amount, creates new transaction for amount.
-        """
-        # 1. Fetch Original
-        tx = self.repo.get_transaction(tx_id, user_id)
+        tx = self.tx_repo.get_by_id(tx_id, user_id)
         if not tx:
             raise ValueError("Transaction not found")
 
-        # 2. Validation
         original_amount = tx['amount']
-        # Prevent splitting more than the transaction value
         if abs(split_amount) >= abs(original_amount):
              raise ValueError("Split amount cannot be greater than or equal to the original transaction amount.")
 
-        # 3. Update Original (Subtract the split part)
         new_original_amount = original_amount - split_amount
-        self.repo.update_transaction(tx_id, user_id, {"amount": new_original_amount})
+        self.tx_repo.update(tx_id, user_id, {"amount": new_original_amount})
 
-        # 4. Create Split Transaction
         new_tx = {
             "date": tx['date'],
             "description": tx['description'] + " (Split)",
@@ -57,11 +51,11 @@ class TransactionService:
             "category": "Uncategorized",
             "account_type": tx['account_type']
         }
-        self.repo.create_transaction(new_tx, user_id)
+        self.tx_repo.create(new_tx, user_id)
 
     def import_from_folder(self, folder_path: str, user_id: int):
         import os
-        from ..data.importer import CibcImporter
+        from ..data.importers.cibc import CibcImporter 
         
         importer = CibcImporter(rule_engine=None)
         if not os.path.exists(folder_path):

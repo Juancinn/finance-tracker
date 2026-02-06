@@ -3,22 +3,20 @@
 .vscode/
 .idea/
 
-# --- Python Backend ---
-backend/venv/
-backend/__pycache__/
-backend/src/adapters/__pycache__/
-backend/*.pyc
-backend/finance.db
-backend/.env
-backend/node_modules/
+# --- Python Global Ignores (Applies to all subfolders) ---
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
 
-# --- React Frontend ---
-frontend/node_modules/
+# --- Specific Files ---
+backend/finance.db
+
+# --- Node / Frontend ---
+node_modules/
 frontend/build/
-frontend/.env
 
 # --- CSV Imports ---
-# Ignore everything in this folder...
 csv_imports/*
-# ...Except for this specific placeholder file (so the folder structure is kept)
 !csv_imports/.gitkeep
