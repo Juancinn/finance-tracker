@@ -7,13 +7,13 @@ class Transaction:
     """
     The Single Source of Truth for a transaction.
     """
-    id: Optional[str] # Unique Hash
+    id: Optional[str] 
     date: date
     description: str
     amount: float
-    currency: str      # 'CAD' or 'USD'
-    account_type: str  # 'Chequing', 'Visa', 'Savings'
-    category: str      # e.g., "Food", "Rent"
+    currency: str      
+    account_type: str  
+    category: str      
     
     def is_expense(self) -> bool:
         if self.category in ["Transfer", "Income"]:

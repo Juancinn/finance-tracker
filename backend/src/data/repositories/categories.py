@@ -12,7 +12,6 @@ class CategoryRepository:
         results = []
         for row in rows:
             cat_dict = dict(row)
-            # Count usage for UI stats
             count_query = "SELECT COUNT(*) FROM transactions WHERE category LIKE ? AND user_id = ?"
             count = conn.execute(count_query, ('%' + row['name'] + '%', user_id)).fetchone()[0]
             cat_dict['count'] = count
@@ -30,7 +29,6 @@ class CategoryRepository:
     def delete(self, name: str, user_id: int):
         conn = self.db.get_connection()
         conn.execute("DELETE FROM categories WHERE name = ? AND user_id = ?", (name, user_id))
-        # Reset transactions to Uncategorized
         conn.execute("UPDATE transactions SET category = 'Uncategorized' WHERE category = ? AND user_id = ?", (name, user_id))
         conn.commit()
         conn.close()
@@ -38,7 +36,6 @@ class CategoryRepository:
     def update_name(self, old_name: str, new_name: str, user_id: int):
         conn = self.db.get_connection()
         conn.execute("UPDATE categories SET name = ? WHERE name = ? AND user_id = ?", (new_name, old_name, user_id))
-        # Update history
         conn.execute("UPDATE transactions SET category = ? WHERE category = ? AND user_id = ?", (new_name, old_name, user_id))
         conn.commit()
         conn.close()

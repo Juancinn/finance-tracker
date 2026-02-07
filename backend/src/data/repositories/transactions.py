@@ -11,17 +11,18 @@ class TransactionRepository:
         conn.close()
         return dict(row) if row else None
 
-    def exists(self, date: str, amount: float, description: str, user_id: int) -> bool:
-        """Checks if a transaction or its splits already exist by signature."""
+    def exists(self, date: str, amount: float, description: str, user_id: int, account_type: str) -> bool:
+        """Checks if a transaction or its splits already exist by signature in a specific account."""
         conn = self.db.get_connection()
         query = """
             SELECT 1 FROM transactions 
             WHERE date = ? 
             AND (description = ? OR description = ? || ' (Split)')
+            AND account_type = ?
             AND user_id = ? 
             LIMIT 1
         """
-        cursor = conn.execute(query, (date, description, description, user_id))
+        cursor = conn.execute(query, (date, description, description, account_type, user_id))
         result = cursor.fetchone()
         conn.close()
         return result is not None

@@ -30,7 +30,7 @@ function App() {
     setTransactions(txnData);
     
     try {
-      const catRes = await fetch('http://127.0.0.1:5000/categories');
+      const catRes = await fetch('http://127.0.0.1:5001/categories');
       setCategories(await catRes.json());
     } catch (e) { console.error(e); }
   }, [dateRange]); 

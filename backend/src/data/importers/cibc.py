@@ -1,51 +1,51 @@
 import csv
-from datetime import datetime
 
 class CibcImporter:
     def __init__(self, rule_engine=None):
-        # We accept rule_engine to keep compatibility if passed, but we ignore it.
-        # Categorization is now the Service's job.
         pass
 
     def parse(self, file_path, account_type):
         transactions = []
-        
-        with open(file_path, 'r') as f:
+        with open(file_path, mode='r', encoding='utf-8') as f:
             reader = csv.reader(f)
-            # Skip header if it exists (CIBC usually doesn't have headers, check your files)
-            # next(reader, None) 
-
             for row in reader:
-                if not row: continue
+                # Ensure we have at least date, description, and one amount column
+                if not row or len(row) < 3:
+                    continue
+                
+                date = row[0].strip()
+                description = row[1].strip()
+                
+                # Column 3 is usually Out/Purchase, Column 4 is In/Payment
+                val_col_3 = row[2].strip()
+                val_col_4 = row[3].strip() if len(row) > 3 else ""
 
-                # CIBC Format: Date, Description, Out, In
-                date_str = row[0]
-                desc = row[1]
-                debit = row[2]
-                credit = row[3]
-
-                # Parse Date (YYYY-MM-DD)
-                try:
-                    date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                    formatted_date = date_obj.strftime('%Y-%m-%d')
-                except ValueError:
-                    continue # Skip invalid dates
-
-                # Calculate Amount
                 amount = 0.0
-                if credit and credit.strip():
-                    amount = float(credit)
-                elif debit and debit.strip():
-                    amount = -abs(float(debit))
+                try:
+                    if account_type == "Visa":
+                        # In Visa CSVs, purchases are positive in col 3. 
+                        # We make them negative to represent an expense.
+                        if val_col_3:
+                            amount = -float(val_col_3.replace(',', ''))
+                        elif val_col_4:
+                            # Payments to the card are positive (reducing debt)
+                            amount = float(val_col_4.replace(',', ''))
+                    else:
+                        # Chequing/Savings: Col 3 is Withdrawal (-), Col 4 is Deposit (+)
+                        if val_col_3:
+                            amount = -float(val_col_3.replace(',', ''))
+                        elif val_col_4:
+                            amount = float(val_col_4.replace(',', ''))
+                        else:
+                            continue
+                except ValueError:
+                    continue
 
-                # Build Dict
-                tx = {
-                    "date": formatted_date,
-                    "description": desc,
+                transactions.append({
+                    "date": date,
+                    "description": description,
                     "amount": amount,
                     "account_type": account_type,
-                    "category": "Uncategorized" # Default, Service will update this
-                }
-                transactions.append(tx)
-                
+                    "currency": "CAD"
+                })
         return transactions

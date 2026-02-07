@@ -1,8 +1,6 @@
 from flask import Blueprint, request, jsonify
 import os
 import tempfile
-
-# NEW IMPORTS
 from ..data.database import DatabaseConnection
 from ..data.repositories.transactions import TransactionRepository
 from ..data.repositories.categories import CategoryRepository
@@ -12,28 +10,24 @@ from ..data.importers.cibc import CibcImporter
 
 api_bp = Blueprint('api', __name__)
 
-# CONFIG & INJECTION
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = os.path.join(BASE_DIR, 'finance.db')
 
-# 1. Init Database
 db = DatabaseConnection(DB_PATH)
 
-# 2. Init Repositories
 tx_repo = TransactionRepository(db)
 cat_repo = CategoryRepository(db)
 rule_repo = RuleRepository(db)
 
-# 3. Init Service (Inject dependencies)
 service = TransactionService(tx_repo, rule_repo)
 
-# --- TRANSACTIONS ---
+# Could be split further to make it more modular
+# Transactons
 
 @api_bp.route('/transactions', methods=['GET'])
 def get_transactions():
     start = request.args.get('start')
     end = request.args.get('end')
-    # Call tx_repo directly for reads
     data = tx_repo.get_all(user_id=1, start_date=start, end_date=end)
     return jsonify(data)
 
@@ -65,7 +59,7 @@ def split_transaction(tx_id):
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
-# --- CATEGORIES ---
+# Categories
 
 @api_bp.route('/categories', methods=['GET'])
 def get_categories():
@@ -95,7 +89,7 @@ def update_category(name):
         cat_repo.update_type(name, data['type'], user_id=1)
     return jsonify({"status": "updated"})
 
-# --- RULES ---
+# Rules
 
 @api_bp.route('/rules', methods=['GET'])
 def get_rules():
@@ -107,7 +101,7 @@ def create_rule():
     rule_repo.create(data['keyword'], data['category'], user_id=1)
     return jsonify({"status": "rule created"}), 201
 
-# --- IMPORT (WEB) ---
+# Import
 
 @api_bp.route('/import', methods=['POST'])
 def upload_file():

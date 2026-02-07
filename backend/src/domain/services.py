@@ -13,8 +13,15 @@ class TransactionService:
         added_count = 0
 
         for tx in raw_transactions:
-            # 1. Deduplicate by Signature (Date + Description)
-            if self.tx_repo.exists(tx['date'], tx['amount'], tx['description'], user_id):
+            # 1. Deduplicate by Signature (Date + Description + Account Type)
+            # Added tx['account_type'] as the 5th argument to match the new Repository signature
+            if self.tx_repo.exists(
+                tx['date'], 
+                tx['amount'], 
+                tx['description'], 
+                user_id, 
+                tx['account_type']
+            ):
                 continue 
 
             # 2. Savings Rule
@@ -40,13 +47,14 @@ class TransactionService:
 
         original_amount = tx['amount']
         
+        # Detect sign to handle expenses vs income
         sign = 1 if original_amount >= 0 else -1
-
         actual_split_value = abs(split_amount) * sign
 
         if abs(actual_split_value) >= abs(original_amount):
              raise ValueError("Split amount cannot be greater than or equal to the original total.")
 
+        # 1. Update original transaction amount
         new_original_amount = original_amount - actual_split_value
         self.tx_repo.update(tx_id, user_id, {"amount": new_original_amount})
 
@@ -87,6 +95,7 @@ class TransactionService:
                     total_added += added
                     files_processed += 1
                 except Exception as e:
+                    # This will now catch and print if there's a mismatch in arguments
                     print(f"Error reading file {filename}: {e}")
 
         return total_added, files_processed
