@@ -12,10 +12,16 @@ class TransactionRepository:
         return dict(row) if row else None
 
     def exists(self, date: str, amount: float, description: str, user_id: int) -> bool:
-        """Checks if a transaction signature already exists."""
+        """Checks if a transaction or its splits already exist by signature."""
         conn = self.db.get_connection()
-        query = "SELECT 1 FROM transactions WHERE date = ? AND amount = ? AND description = ? AND user_id = ? LIMIT 1"
-        cursor = conn.execute(query, (date, amount, description, user_id))
+        query = """
+            SELECT 1 FROM transactions 
+            WHERE date = ? 
+            AND (description = ? OR description = ? || ' (Split)')
+            AND user_id = ? 
+            LIMIT 1
+        """
+        cursor = conn.execute(query, (date, description, description, user_id))
         result = cursor.fetchone()
         conn.close()
         return result is not None
