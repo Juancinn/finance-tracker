@@ -41,13 +41,19 @@ def create_transaction():
 def update_transaction(tx_id):
     data = request.json
     updates = {}
-    if 'category' in data: updates['category'] = data['category']
-    if 'subcategory' in data: updates['subcategory'] = data['subcategory']
-    if 'description' in data: updates['description'] = data['description']
-    
+    if 'category' in data: 
+        updates['category'] = data['category']
+    if 'description' in data: 
+        updates['description'] = data['description']
     if updates:
-        tx_repo.update(tx_id, 1, updates)
-    return jsonify({"status": "updated"})
+        try:
+            tx_repo.update(tx_id, 1, updates)
+            return jsonify({"status": "updated"})
+        except Exception as e:
+            print(f"Error updating transaction: {e}")
+            return jsonify({"error": str(e)}), 500
+            
+    return jsonify({"status": "no updates"})
 
 @api_bp.route('/transactions/<int:tx_id>/split', methods=['POST'])
 def split_transaction(tx_id):

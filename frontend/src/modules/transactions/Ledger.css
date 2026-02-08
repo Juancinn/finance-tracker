@@ -1,0 +1,135 @@
+.ledger-container {
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed; 
+}
+
+.col-date   { width: 110px; }
+.col-cat    { width: 160px; }
+.col-amount { width: 100px; }
+.col-action { width: 60px; }
+.col-desc   { width: auto; } 
+
+th {
+  text-align: left;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.date-cell {
+  color: var(--text-muted);
+  font-feature-settings: "tnum"; 
+}
+
+.truncate-wrapper {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  display: block;
+  font-weight: 500;
+}
+
+.ledger-select {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+
+.ledger-select:hover {
+  background: white;
+  border-color: var(--border-color);
+}
+
+.ledger-select:focus {
+  outline: none;
+  background: white;
+  border-color: var(--color-accent);
+}
+
+.amount-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 600;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+.text-green { color: var(--color-success); }
+.text-black { color: var(--text-primary); }
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  color: var(--color-accent);
+  background: rgba(59, 130, 246, 0.1);
+  transform: scale(1.1);
+}
+
+.ledger-row:hover td {
+  background: rgba(241, 245, 249, 0.5);
+}
+
+.desc-cell {
+  cursor: pointer; 
+  user-select: none; 
+}
+
+.truncate-wrapper {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  display: block;
+  font-weight: 500;
+  transition: all 0.2s ease; 
+}
+
+.truncate-wrapper.expanded {
+  white-space: normal; 
+  overflow: visible;
+  line-height: 1.4;
+  color: var(--color-primary);
+}
+
+.truncate-wrapper:not(.expanded):hover {
+  color: var(--color-accent);
+}

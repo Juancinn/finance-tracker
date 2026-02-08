@@ -1,0 +1,41 @@
+.timeline-container {
+    margin-bottom: 2rem;
+    overflow-x: auto; 
+    padding-bottom: 4px; 
+  }
+  
+  .filter-group {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .filter-pill {
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    padding: 0.6rem 1.25rem;
+    border-radius: 999px; 
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    white-space: nowrap;
+  }
+  
+  .filter-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+  }
+  
+  .filter-pill.active {
+    background: var(--text-primary); 
+    color: var(--bg-card); 
+    border-color: var(--text-primary);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .timeline-container::-webkit-scrollbar {
+    display: none;
+  }

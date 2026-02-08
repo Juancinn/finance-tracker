@@ -1,0 +1,122 @@
+.account-group-container {
+    margin-bottom: 1.5rem;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .account-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: var(--bg-card);
+    transition: background 0.2s;
+    user-select: none; 
+  }
+  
+  .account-header:hover {
+    background: var(--bg-subtle);
+  }
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .icon-wrapper {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+  }
+  
+  .account-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+  }
+  
+  .transaction-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  
+  .mini-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 0.8rem;
+  }
+  
+  .mini-label { 
+    color: var(--text-muted); 
+    margin-bottom: 2px; 
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+  
+  .mini-val { font-weight: 600; font-family: 'Roboto Mono', monospace; }
+  
+  .net-stat {
+    padding-left: 24px;
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .net-val-large {
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+  }
+  
+  .chevron-wrapper {
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+  }
+  
+  .chevron {
+    transition: transform 0.2s ease;
+  }
+  
+  .chevron.open {
+    transform: rotate(180deg); 
+  }
+  
+  .text-green { color: var(--color-success); }
+  .text-black { color: var(--text-primary); }
+  
+  .account-body {
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+  }
+  
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  
+  @media (max-width: 600px) {
+    .header-right { gap: 12px; }
+    .mini-stat { display: none; } 
+    .net-stat { border: none; padding: 0; }
+    .transaction-count { display: none; }
+  }

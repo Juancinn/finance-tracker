@@ -1,0 +1,30 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr; 
+  gap: 2rem;
+  align-items: start; 
+}
+
+.accounts-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0; 
+}
+
+.charts-column {
+  position: sticky;
+  top: 2rem;
+  min-width: 320px; 
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-column {
+    position: static;
+    min-width: 0;
+  }
+}
