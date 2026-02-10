@@ -28,7 +28,9 @@ Right now the importer is optimized for **CIBC CSV exports**.
 
 1. Place your CSV files in the `csv_imports` folder  
 2. Run `main.py` once — this parses the CSVs and loads them into the local database  
-3. Start the backend server by running `app.py`  
-4. Start the frontend with:
+3. Start the backend server by running
+      ```bash
+      app.py  
+5. Start the frontend with:
    ```bash
    npm start
